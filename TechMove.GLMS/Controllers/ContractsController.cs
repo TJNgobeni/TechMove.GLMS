@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TechMove.GLMS.Data;
 using TechMove.GLMS.Models;
@@ -65,31 +64,27 @@ namespace TechMove.GLMS.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Contract contract, IFormFile? signedAgreement)
         {
-            // ✅ Always reload dropdown data
+            // Always reload dropdown data so the form re-renders correctly on error
             PopulateViewData();
 
             try
             {
                 _logger.LogInformation("Creating contract for ClientId {ClientId}", contract.ClientId);
 
-                // ✅ Client validation
+                // Validate client selection
                 if (contract.ClientId <= 0)
                 {
                     ModelState.AddModelError(nameof(contract.ClientId), "Please select a valid client.");
                 }
 
-                // ✅ Date validation
-                var dateValidation = _validationService.ValidateDateRange(
-                    contract.StartDate,
-                    contract.EndDate
-                );
-
+                // Validate date range
+                var dateValidation = _validationService.ValidateDateRange(contract.StartDate, contract.EndDate);
                 if (!dateValidation.IsValid)
                 {
                     ModelState.AddModelError(nameof(contract.EndDate), dateValidation.Message);
                 }
 
-                // ✅ File upload
+                // Handle optional file upload
                 if (signedAgreement != null && signedAgreement.Length > 0)
                 {
                     var fileValidation = _validationService.ValidateFileUpload(
@@ -108,22 +103,20 @@ namespace TechMove.GLMS.Controllers
                     }
                 }
 
-                // ✅ Debug validation logs
+                // Log any validation errors for debugging
                 foreach (var key in ModelState.Keys)
                 {
                     foreach (var error in ModelState[key].Errors)
                     {
-                        _logger.LogWarning("Validation error {Key}: {Error}", key, error.ErrorMessage);
+                        _logger.LogWarning("Validation error [{Key}]: {Error}", key, error.ErrorMessage);
                     }
                 }
 
-                // ✅ If invalid, return view with errors
                 if (!ModelState.IsValid)
                 {
                     return View(contract);
                 }
 
-                // ✅ Save contract
                 _context.Contracts.Add(contract);
                 await _context.SaveChangesAsync();
 
@@ -144,6 +137,7 @@ namespace TechMove.GLMS.Controllers
         {
             var contract = await _context.Contracts
                 .Include(c => c.Client)
+                .Include(c => c.ServiceRequests)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             return contract == null ? NotFound() : View(contract);
@@ -166,7 +160,6 @@ namespace TechMove.GLMS.Controllers
                 return NotFound();
 
             var fileBytes = System.IO.File.ReadAllBytes(path);
-
             return File(fileBytes, "application/pdf", Path.GetFileName(path));
         }
 
@@ -174,9 +167,7 @@ namespace TechMove.GLMS.Controllers
 
         private void PopulateViewData()
         {
-            // ✅ Pass raw list to view, NOT SelectList
-            var clients = _context.Clients.OrderBy(c => c.Name).ToList();
-            ViewData["Clients"] = clients;
+            ViewData["Clients"] = _context.Clients.OrderBy(c => c.Name).ToList();
         }
 
         private async Task<string> SaveFileAsync(IFormFile file)
