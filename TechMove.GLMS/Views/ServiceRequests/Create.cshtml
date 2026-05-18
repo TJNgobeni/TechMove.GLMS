@@ -1,0 +1,92 @@
+﻿@model TechMove.GLMS.Models.ServiceRequest
+
+@{
+    ViewData["Title"] = "Create Service Request";
+    var contracts = ViewData["Contracts"] as IEnumerable<TechMove.GLMS.Models.Contract> ?? Enumerable.Empty<TechMove.GLMS.Models.Contract>();
+}
+
+<h1>Create Service Request</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+            <div class="mb-3">
+                <label asp-for="ContractId" class="form-label">Contract</label>
+                <select asp-for="ContractId" class="form-select">
+                    <option value="">-- Select Active Contract --</option>
+                    @foreach (var contract in contracts)
+                    {
+                        <option value="@contract.Id">@contract.Client?.Name — @contract.ServiceLevel (@contract.EndDate.ToShortDateString())</option>
+                    }
+                </select>
+                <span asp-validation-for="ContractId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <input asp-for="Description" class="form-control" />
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Amount (USD)</label>
+                <input type="number" id="amountInput" class="form-control" step="0.01" min="0.01"
+                       placeholder="Enter amount in USD" />
+                <small class="text-muted">Exchange rate is applied automatically on the server.</small>
+            </div>
+
+            <input asp-for="Cost" type="hidden" id="costHidden" />
+
+            <div class="mb-3">
+                <label asp-for="CostZAR" class="form-label"></label>
+                <input asp-for="CostZAR" class="form-control" id="costZarDisplay" readonly placeholder="Calculated after submit" />
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Status" class="form-label"></label>
+                <input asp-for="Status" class="form-control" />
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+            <div class="d-flex gap-2">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        let exchangeRate = null;
+
+        // Fetch the rate once on page load
+        async function loadRate() {
+            try {
+                const response = await fetch('/ServiceRequests/GetExchangeRate');
+                const data = await response.json();
+                exchangeRate = data.rate;
+            } catch {
+                exchangeRate = 18.50;
+            }
+        }
+
+        document.getElementById('amountInput').addEventListener('input', function () {
+            const usd = parseFloat(this.value) || 0;
+            document.getElementById('costHidden').value = usd.toFixed(2);
+
+            if (exchangeRate !== null) {
+                document.getElementById('costZarDisplay').value = (usd * exchangeRate).toFixed(2);
+            }
+        });
+
+        loadRate();
+    </script>
+}
