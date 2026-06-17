@@ -5,11 +5,11 @@ COPY ["TechMove.GLMS.Core/TechMove.GLMS.Core.csproj", "TechMove.GLMS.Core/"]
 RUN dotnet restore "TechMove.GLMS.Api/TechMove.GLMS.Api.csproj"
 COPY . .
 WORKDIR "/src/TechMove.GLMS.Api"
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish/api /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 ENV ASPNETCORE_URLS=http://+:5001
 EXPOSE 5001
-COPY --from=build /app/publish .
+COPY --from=build /app/publish/api .
 ENTRYPOINT ["dotnet", "TechMove.GLMS.Api.dll"]
