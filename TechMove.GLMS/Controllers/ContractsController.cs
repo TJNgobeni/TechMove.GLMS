@@ -172,7 +172,7 @@ public class ContractsController : Controller
         try
         {
             await _api.PatchContractStatusAsync(id, status);
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { status });
         }
         catch (KeyNotFoundException)
         {
@@ -182,7 +182,7 @@ public class ContractsController : Controller
         {
             _logger.LogError(ex, "Error updating contract status {Id}", id);
             ModelState.AddModelError("", "Unable to update status.");
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), new { status });
         }
     }
 

@@ -67,10 +67,9 @@ else
 builder.Services.AddHttpClient<TechMove.GLMS.Services.ICurrencyService, TechMove.GLMS.Services.CurrencyService>()
     .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(10));
 
-builder.Services.AddScoped<TechMove.GLMS.Services.ICurrencyService, TechMove.GLMS.Services.CurrencyService>();
-builder.Services.AddScoped<TechMove.GLMS.Services.IValidationService, TechMove.GLMS.Services.ValidationService>();
-builder.Services.AddScoped<TechMove.GLMS.Api.Services.IFileStorage, TechMove.GLMS.Api.Services.LocalFileStorage>();
 builder.Services.AddScoped<TechMove.GLMS.Api.Services.IContractService, TechMove.GLMS.Api.Services.ContractService>();
+builder.Services.AddScoped<TechMove.GLMS.Api.Services.IFileStorage, TechMove.GLMS.Api.Services.LocalFileStorage>();
+builder.Services.AddScoped<TechMove.GLMS.Api.Services.IValidationService, TechMove.GLMS.Api.Services.ValidationService>();
 
 // TODO: replace with real JWT auth once keys/secrets are in place.
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "dev-secret-key-please-replace";

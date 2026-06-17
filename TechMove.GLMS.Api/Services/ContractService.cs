@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechMove.GLMS.Core.Contracts;
 using TechMove.GLMS.Core.DTOs.Contracts;
@@ -6,7 +7,6 @@ using TechMove.GLMS.Core.Repositories;
 using TechMove.GLMS.Data;
 using TechMove.GLMS.Models;
 using TechMove.GLMS.Models.Enums;
-using TechMove.GLMS.Services;
 
 namespace TechMove.GLMS.Api.Services;
 
@@ -21,7 +21,6 @@ public interface IContractService
 public class ContractService : IContractService
 {
     private readonly AppDbContext _db;
-    private readonly IValidationService _validationService;
     private readonly IFileStorage _fileStorage;
     private readonly ILogger<ContractService> _logger;
 
@@ -30,14 +29,35 @@ public class ContractService : IContractService
 
     public ContractService(
         AppDbContext db,
-        IValidationService validationService,
         IFileStorage fileStorage,
         ILogger<ContractService> logger)
     {
         _db = db;
-        _validationService = validationService;
         _fileStorage = fileStorage;
         _logger = logger;
+    }
+
+    private static (bool IsValid, string Message) ValidateFileUpload(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return (false, "No file was uploaded.");
+
+        if (file.Length > MaxFileSize)
+            return (false, $"File size exceeds the {MaxFileSize / 1024 / 1024}MB limit.");
+
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (!AllowedExtensions.Contains(extension))
+            return (false, $"Only {string.Join(", ", AllowedExtensions).ToUpper()} files are allowed.");
+
+        return (true, "Valid");
+    }
+
+    private static (bool IsValid, string Message) ValidateDateRange(DateTime startDate, DateTime endDate)
+    {
+        if (endDate <= startDate)
+            return (false, "End date must be after start date.");
+
+        return (true, "Valid");
     }
 
     public async Task<IReadOnlyList<object>> GetAllAsync(Core.DTOs.Contracts.ContractListFilter filter, CancellationToken ct = default)
@@ -105,14 +125,14 @@ public class ContractService : IContractService
         if (request.ClientId <= 0)
             throw new InvalidOperationException("Please select a valid client.");
 
-        var dateValidation = _validationService.ValidateDateRange(request.StartDate, request.EndDate);
+        var dateValidation = ValidateDateRange(request.StartDate, request.EndDate);
         if (!dateValidation.IsValid)
             throw new InvalidOperationException(dateValidation.Message);
 
         if (!await _db.Clients.AnyAsync(c => c.Id == request.ClientId, ct))
             throw new InvalidOperationException("Selected client does not exist.");
 
-        var fileValidation = _validationService.ValidateFileUpload(request.SignedAgreement ?? new FormFile(new MemoryStream(), 0, 0, "signedAgreement", string.Empty), AllowedExtensions, MaxFileSize);
+        var fileValidation = ValidateFileUpload(request.SignedAgreement ?? new FormFile(new MemoryStream(), 0, 0, "signedAgreement", string.Empty));
         if (!fileValidation.IsValid && request.SignedAgreement is not null && request.SignedAgreement.Length > 0)
             throw new InvalidOperationException(fileValidation.Message);
 

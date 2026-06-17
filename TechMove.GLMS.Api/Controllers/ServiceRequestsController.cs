@@ -13,19 +13,16 @@ public class ServiceRequestsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ICurrencyService _currencyService;
-    private readonly IValidationService _validationService;
     private readonly ILogger<ServiceRequestsController> _logger;
     private const decimal DefaultRate = 18.50m;
 
     public ServiceRequestsController(
         AppDbContext db,
         ICurrencyService currencyService,
-        IValidationService validationService,
         ILogger<ServiceRequestsController> logger)
     {
         _db = db;
         _currencyService = currencyService;
-        _validationService = validationService;
         _logger = logger;
     }
 
@@ -102,9 +99,15 @@ public class ServiceRequestsController : ControllerBase
     {
         try
         {
-            var validation = await _validationService.ValidateContractForServiceRequestAsync(request.ContractId);
-            if (!validation.IsValid)
-                return BadRequest(new { error = validation.Message });
+            var contract = await _db.Contracts.FindAsync(new object?[] { request.ContractId }, cancellationToken: ct);
+            if (contract == null)
+                return BadRequest(new { error = "Contract not found." });
+
+            if (contract.Status == ContractStatus.Expired || contract.Status == ContractStatus.OnHold)
+                return BadRequest(new { error = "Cannot create a service request. The parent contract is Expired or On Hold." });
+
+            if (DateTime.Now > contract.EndDate)
+                return BadRequest(new { error = "Cannot create a service request. The contract has passed its end date." });
 
             decimal costZar;
             try

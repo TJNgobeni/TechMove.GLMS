@@ -1,16 +1,25 @@
-﻿using TechMove.GLMS.Data;
-using TechMove.GLMS.Core.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
+using TechMove.GLMS.Clients;
+using TechMove.GLMS.Models.Enums;
 
 namespace TechMove.GLMS.Services
 {
+    public interface IValidationService
+    {
+        Task<(bool IsValid, string Message)> ValidateContractForServiceRequestAsync(int contractId);
+        (bool IsValid, string Message) ValidateFileUpload(IFormFile file, string[] allowedExtensions, long maxFileSize);
+        (bool IsValid, string Message) ValidateDateRange(DateTime startDate, DateTime endDate);
+    }
+
     public class ValidationService : IValidationService
     {
-        private readonly AppDbContext _context;
+        private readonly IApiClient _api;
         private readonly ILogger<ValidationService> _logger;
 
-        public ValidationService(AppDbContext context, ILogger<ValidationService> logger)
+        public ValidationService(IApiClient api, ILogger<ValidationService> logger)
         {
-            _context = context;
+            _api = api;
             _logger = logger;
         }
 
@@ -18,15 +27,11 @@ namespace TechMove.GLMS.Services
         {
             try
             {
-                var contract = await _context.Contracts.FindAsync(contractId);
-
+                var contract = await _api.GetContractAsync(contractId);
                 if (contract == null)
                     return (false, "Contract not found.");
 
-                if (contract.Status == ContractStatus.Expired)
-                    return (false, "Cannot create a service request. The parent contract is Expired or On Hold.");
-
-                if (contract.Status == ContractStatus.OnHold)
+                if (contract.Status == ContractStatus.Expired || contract.Status == ContractStatus.OnHold)
                     return (false, "Cannot create a service request. The parent contract is Expired or On Hold.");
 
                 if (DateTime.Now > contract.EndDate)
@@ -36,7 +41,7 @@ namespace TechMove.GLMS.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error validating contract {ContractId}", contractId);
+                _logger.LogError(ex, "Error validating contract {ContractId} via API", contractId);
                 return (false, "A validation error occurred.");
             }
         }

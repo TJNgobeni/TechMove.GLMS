@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using System;
-using TechMove.GLMS.Data;
 using TechMove.GLMS.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Session;
@@ -19,9 +17,6 @@ builder.Host.UseSerilog();
 
 // Services
 builder.Services.AddControllersWithViews();
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddHttpClient<ICurrencyService, CurrencyService>()
     .ConfigureHttpClient(client => client.Timeout = TimeSpan.FromSeconds(10));

@@ -5,15 +5,21 @@ using TechMove.GLMS.Core.DTOs.ServiceRequests;
 
 namespace TechMove.GLMS.IntegrationTests;
 
-public class InMemoryApiFixture
+public class InMemoryApiFixture : IDisposable
 {
     public HttpClient Client { get; }
+    public WebApplicationFactory<Program> Factory { get; }
 
     public InMemoryApiFixture()
     {
-        var factory = new WebApplicationFactory<TechMove.GLMS.Api.Controllers.ClientsController>();
+        Factory = new WebApplicationFactory<Program>();
+        Client = Factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = true });
+    }
 
-        Client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = true });
+    public void Dispose()
+    {
+        Client.Dispose();
+        Factory.Dispose();
     }
 }
 

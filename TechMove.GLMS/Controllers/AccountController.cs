@@ -1,10 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Headers;
-using System.Security.Claims;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using TechMove.GLMS.Models;
 
 namespace TechMove.GLMS.Controllers
@@ -33,7 +28,7 @@ namespace TechMove.GLMS.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            var apiBase = _configuration["ApiBaseUrl"] ?? "https://localhost:5001";
+            var apiBase = _configuration["ApiBaseUrl"] ?? "http://localhost:5001";
             var client = _httpClientFactory.CreateClient();
             client.BaseAddress = new Uri(apiBase);
 

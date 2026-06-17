@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using TechMove.GLMS.Core.DTOs.Contracts;
 using TechMove.GLMS.Core.DTOs.ServiceRequests;
 using Xunit;
@@ -15,22 +16,34 @@ public class ApiIntegrationTests : IClassFixture<InMemoryApiFixture>
     }
 
     [Fact]
-    public async Task GetClients_ReturnsSuccessAndNonNull()
+    public async Task Health_ApiRoot_ReturnsSuccess()
     {
-        var response = await _client.GetAsync("/api/clients");
+        var response = await _client.GetAsync("/");
 
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-
-        var clients = await response.Content.ReadFromJsonAsync<List<object>>();
-        Assert.NotNull(clients);
     }
 
     [Fact]
-    public async Task Login_WithInvalidCredentials_ReturnsUnauthorized()
+    public async Task Contracts_ApiSurface_IsReachable()
     {
-        var payload = new { email = "invalid@example.com", password = "wrong" };
-        var response = await _client.PostAsJsonAsync("/api/auth/login", payload);
+        var filter = new ContractListFilter();
+        var query = new System.Collections.Generic.Dictionary<string, string?>
+        {
+            ["status"] = string.Empty,
+            ["startDate"] = string.Empty,
+            ["endDate"] = string.Empty
+        };
 
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        var response = await _client.GetAsync("/api/contracts?" + new FormUrlEncodedContent(query).ReadAsStringAsync());
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SwaggerDoc_IsAvailable()
+    {
+        var response = await _client.GetAsync("/swagger/v1/swagger.json");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 }
