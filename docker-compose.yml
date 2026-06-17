@@ -1,0 +1,38 @@
+services:
+  sql-server-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "P@ssw0rd!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "P@ssw0rd!", "-Q", "SELECT 1"]
+      interval: 10s
+      retries: 20
+      start_period: 20s
+
+  glms-backend-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_URLS=http://+:5001
+      - ConnectionStrings__DefaultConnection=Server=sql-server-db,1433;Database=TechMoveGLMS;User=sa;Password=P@ssw0rd!;TrustServerCertificate=True;MultipleActiveResultSets=true
+    depends_on:
+      sql-server-db:
+        condition: service_healthy
+
+  glms-frontend-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_URLS=http://+:5000
+      - ApiBaseUrl=http://glms-backend-api:5001
+    depends_on:
+      - glms-backend-api

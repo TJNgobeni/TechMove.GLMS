@@ -1,130 +1,131 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using TechMove.GLMS.Data;
-using TechMove.GLMS.Models;
+using TechMove.GLMS.Clients;
+using TechMove.GLMS.Core.DTOs.ServiceRequests;
 using TechMove.GLMS.Models.Enums;
 using TechMove.GLMS.Services;
 
-namespace TechMove.GLMS.Controllers
+namespace TechMove.GLMS.Controllers;
+
+public class ServiceRequestsController : Controller
 {
-    public class ServiceRequestsController : Controller
+    private readonly IApiClient _api;
+    private readonly ICurrencyService _currencyService;
+    private readonly IValidationService _validationService;
+    private readonly ILogger<ServiceRequestsController> _logger;
+    private const decimal DefaultRate = 18.50m;
+
+    public ServiceRequestsController(
+        IApiClient api,
+        ICurrencyService currencyService,
+        IValidationService validationService,
+        ILogger<ServiceRequestsController> logger)
     {
-        private readonly AppDbContext _context;
-        private readonly ICurrencyService _currencyService;
-        private readonly IValidationService _validationService;
-        private readonly ILogger<ServiceRequestsController> _logger;
-        private const decimal DefaultRate = 18.50m;
+        _api = api;
+        _currencyService = currencyService;
+        _validationService = validationService;
+        _logger = logger;
+    }
 
-        public ServiceRequestsController(
-            AppDbContext context,
-            ICurrencyService currencyService,
-            IValidationService validationService,
-            ILogger<ServiceRequestsController> logger)
+    // GET: ServiceRequests
+    public async Task<IActionResult> Index()
+    {
+        try
         {
-            _context = context;
-            _currencyService = currencyService;
-            _validationService = validationService;
-            _logger = logger;
+            var requests = await _api.GetServiceRequestsAsync();
+            return View(requests);
         }
-
-        // GET: ServiceRequests
-        public async Task<IActionResult> Index()
+        catch (Exception ex)
         {
-            try
-            {
-                var requests = await _context.ServiceRequests
-                    .Include(s => s.Contract)
-                    .ThenInclude(c => c.Client)
-                    .OrderByDescending(s => s.CreatedAt)
-                    .ToListAsync();
-
-                return View(requests);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving service requests");
-                return View(new List<ServiceRequest>());
-            }
+            _logger.LogError(ex, "Error retrieving service requests");
+            return View(new List<Models.ServiceRequest>());
         }
+    }
 
-        // GET: ServiceRequests/Create
-        public IActionResult Create()
+    // GET: ServiceRequests/Create
+    public async Task<IActionResult> Create()
+    {
+        await PopulateViewDataAsync();
+        return View();
+    }
+
+    // POST: ServiceRequests/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(Models.ServiceRequest serviceRequest)
+    {
+        try
         {
-            PopulateViewData();
-            return View();
-        }
-
-        // POST: ServiceRequests/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(ServiceRequest serviceRequest)
-        {
-            try
+            var validation = await _validationService.ValidateContractForServiceRequestAsync(serviceRequest.ContractId);
+            if (!validation.IsValid)
             {
-                var validation = await _validationService.ValidateContractForServiceRequestAsync(serviceRequest.ContractId);
-                if (!validation.IsValid)
-                {
-                    ModelState.AddModelError("", validation.Message);
-                    PopulateViewData();
-                    return View(serviceRequest);
-                }
-
-                try
-                {
-                    var rate = await _currencyService.GetUsdToZarRateAsync();
-                    serviceRequest.CostZAR = serviceRequest.Cost * rate;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Currency conversion failed. Using default rate.");
-                    serviceRequest.CostZAR = serviceRequest.Cost * DefaultRate;
-                }
-
-                if (!ModelState.IsValid)
-                {
-                    PopulateViewData();
-                    return View(serviceRequest);
-                }
-
-                _context.Add(serviceRequest);
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Service request created for ContractId {ContractId}", serviceRequest.ContractId);
-                return RedirectToAction(nameof(Index));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating service request");
-                ModelState.AddModelError("", "An unexpected error occurred.");
-                PopulateViewData();
+                ModelState.AddModelError("", validation.Message);
+                await PopulateViewDataAsync();
                 return View(serviceRequest);
             }
-        }
 
-        // GET: ServiceRequests/GetExchangeRate
-        [HttpGet]
-        public async Task<IActionResult> GetExchangeRate()
-        {
             try
             {
                 var rate = await _currencyService.GetUsdToZarRateAsync();
-                return Json(new { rate, success = true });
+                serviceRequest.CostZAR = serviceRequest.Cost * rate;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching exchange rate for client");
-                return Json(new { rate = DefaultRate, success = false });
+                _logger.LogWarning(ex, "Currency conversion failed. Using default rate.");
+                serviceRequest.CostZAR = serviceRequest.Cost * DefaultRate;
             }
+
+            if (!ModelState.IsValid)
+            {
+                await PopulateViewDataAsync();
+                return View(serviceRequest);
+            }
+
+            var request = new ServiceRequestCreateRequest
+            {
+                ContractId = serviceRequest.ContractId,
+                Description = serviceRequest.Description,
+                Cost = serviceRequest.Cost
+            };
+
+            await _api.CreateServiceRequestAsync(request);
+            _logger.LogInformation("Service request created for ContractId {ContractId}", serviceRequest.ContractId);
+            return RedirectToAction(nameof(Index));
         }
-
-        // ─── Helpers ───────────────────────────────────────────────────────────
-
-        private void PopulateViewData()
+        catch (Exception ex)
         {
-            ViewData["Contracts"] = _context.Contracts
-                .Include(c => c.Client)
-                .Where(c => c.Status == ContractStatus.Active && c.EndDate >= DateTime.Today)
-                .OrderBy(c => c.Client.Name)
-                .ToList();
+            _logger.LogError(ex, "Error creating service request");
+            ModelState.AddModelError("", "An unexpected error occurred.");
+            await PopulateViewDataAsync();
+            return View(serviceRequest);
         }
+    }
+
+    // GET: ServiceRequests/GetExchangeRate
+    [HttpGet]
+    public async Task<IActionResult> GetExchangeRate()
+    {
+        try
+        {
+            var rate = await _currencyService.GetUsdToZarRateAsync();
+            return Json(new { rate, success = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching exchange rate for client");
+            return Json(new { rate = DefaultRate, success = false });
+        }
+    }
+
+    // ─── Helpers ───────────────────────────────────────────────────────────
+
+    private async Task PopulateViewDataAsync()
+    {
+        var contracts = await _api.GetContractsAsync();
+        var activeContracts = contracts
+            .Where(c => c.Status == ContractStatus.Active && c.EndDate >= DateTime.Today)
+            .OrderBy(c => c.Client?.Name)
+            .ToList();
+
+        ViewData["Contracts"] = activeContracts;
     }
 }
