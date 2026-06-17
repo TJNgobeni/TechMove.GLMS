@@ -3,9 +3,6 @@
 
 @{
     ViewData["Title"] = "Contracts";
-    var currentStart = Context.Request.Query["startDate"].ToString();
-    var currentEnd = Context.Request.Query["endDate"].ToString();
-    var currentStatus = Context.Request.Query["status"].ToString();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -16,25 +13,24 @@
     <div class="row g-2 align-items-end">
         <div class="col-md-3">
             <label class="form-label">Start Date</label>
-            <input type="date" name="startDate" class="form-control" value="@currentStart" />
+            <input type="date" name="startDate" class="form-control" />
         </div>
         <div class="col-md-3">
             <label class="form-label">End Date</label>
-            <input type="date" name="endDate" class="form-control" value="@currentEnd" />
+            <input type="date" name="endDate" class="form-control" />
         </div>
         <div class="col-md-3">
             <label class="form-label">Status</label>
             <select name="status" class="form-select">
-                <option value="">-- All --</option>
-                @foreach (ContractStatus s in Enum.GetValues(typeof(ContractStatus)))
+                <option value="">All</option>
+                @foreach (var s in Enum.GetValues(typeof(ContractStatus)))
                 {
-                    <option value="@s" selected="@(currentStatus == s.ToString() ? "selected" : null)">@s</option>
+                    <option value="@s">@s</option>
                 }
             </select>
         </div>
         <div class="col-md-3 d-flex gap-2">
             <button type="submit" class="btn btn-primary">Filter</button>
-            <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
             <a asp-action="Create" class="btn btn-success">+ New</a>
         </div>
     </div>
@@ -42,24 +38,16 @@
 
 @if (!Model.Any())
 {
-    <div class="alert alert-info">
-        No contracts found.
-        @if (!string.IsNullOrEmpty(currentStart) || !string.IsNullOrEmpty(currentEnd) || !string.IsNullOrEmpty(currentStatus))
-        {
-            <span> — <a asp-action="Index">Clear filters</a> to see all contracts.</span>
-        }
-    </div>
+    <div class="alert alert-info">No contracts found.</div>
 }
 else
 {
-    <p class="text-muted">Showing @Model.Count() contract(s).</p>
     <table class="table table-hover">
         <thead class="table-dark">
             <tr>
                 <th>Client</th>
                 <th>Start Date</th>
                 <th>End Date</th>
-                <th>Days Remaining</th>
                 <th>Status</th>
                 <th>Service Level</th>
                 <th>Actions</th>
@@ -72,16 +60,6 @@ else
                     <td>@item.Client?.Name</td>
                     <td>@item.StartDate.ToShortDateString()</td>
                     <td>@item.EndDate.ToShortDateString()</td>
-                    <td>
-                        @if (item.IsExpiredByDate)
-                        {
-                            <span class="text-danger">Expired</span>
-                        }
-                        else
-                        {
-                            <span>@item.DaysRemaining days</span>
-                        }
-                    </td>
                     <td>
                         @{
                             var badgeClass = item.Status switch

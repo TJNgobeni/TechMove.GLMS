@@ -1,5 +1,5 @@
 ﻿using TechMove.GLMS.Data;
-using TechMove.GLMS.Models.Enums;
+using TechMove.GLMS.Core.Entities;
 
 namespace TechMove.GLMS.Services
 {

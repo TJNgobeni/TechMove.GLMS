@@ -1,9 +1,12 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.37216.2 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TechMove.GLMS", "TechMove.GLMS\TechMove.GLMS.csproj", "{7204F0D8-9615-4364-BCF2-37263EA50106}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TechMove.GLMS.Api", "TechMove.GLMS.Api\TechMove.GLMS.Api.csproj", "{76A5B560-C249-4061-9324-ECB23048AEBF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TechMove.GLMS.Core", "TechMove.GLMS.Core\TechMove.GLMS.Core.csproj", "{AE257C2D-8BE1-4910-B52B-326D978796F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +18,14 @@ Global
 		{7204F0D8-9615-4364-BCF2-37263EA50106}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7204F0D8-9615-4364-BCF2-37263EA50106}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7204F0D8-9615-4364-BCF2-37263EA50106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76A5B560-C249-4061-9324-ECB23048AEBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76A5B560-C249-4061-9324-ECB23048AEBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76A5B560-C249-4061-9324-ECB23048AEBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76A5B560-C249-4061-9324-ECB23048AEBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE257C2D-8BE1-4910-B52B-326D978796F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE257C2D-8BE1-4910-B52B-326D978796F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE257C2D-8BE1-4910-B52B-326D978796F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE257C2D-8BE1-4910-B52B-326D978796F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

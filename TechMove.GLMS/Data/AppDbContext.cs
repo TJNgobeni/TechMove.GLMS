@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using TechMove.GLMS.Models;
-using TechMove.GLMS.Models.Enums;
+using TechMove.GLMS.Core.Entities;
+using ContractStatus = TechMove.GLMS.Core.Entities.ContractStatus;
 
 namespace TechMove.GLMS.Data
 {
@@ -58,22 +58,7 @@ namespace TechMove.GLMS.Data
             });
 
             // Seed Data
-            modelBuilder.Entity<Client>().HasData(
-                new Client
-                {
-                    Id = 1,
-                    Name = "TechMove Logistics",
-                    ContactDetails = "info@techmove.com",
-                    Region = "Africa"
-                },
-                new Client
-                {
-                    Id = 2,
-                    Name = "Global Freight Inc",
-                    ContactDetails = "contact@globalfreight.com",
-                    Region = "Europe"
-                }
-            );
+            // Removed hardcoded client seed entries because constrained Region values caused mismatches.
 
             base.OnModelCreating(modelBuilder);
         }
